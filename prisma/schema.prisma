@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String    @id @default(auto()) @map("_id") @db.ObjectId
+  studentNumber   String    @unique  // York University student/employee number
+  email          String    @unique  // York email (@my.yorku.ca or @yorku.ca)
+  name           String
+  password       String
+  address        String?   // Delivery address (dorm room, apartment, etc.)
+  phoneNumber    String?
+  orders         Order[]
+  cart           CartItem[]
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+}
+
+model Store {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  description String?
+  address     String
+  category    StoreCategory  // e.g., Restaurant, Clothing, Grocery, etc.
+  image       String?
+  products    Product[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Product {
+  id          String    @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  description String
+  price       Float
+  image       String?
+  category    String    // Category within the store
+  store       Store     @relation(fields: [storeId], references: [id])
+  storeId     String    @db.ObjectId
+  cartItems   CartItem[]
+  orderItems  OrderItem[]
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model CartItem {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String   @db.ObjectId
+  product   Product  @relation(fields: [productId], references: [id])
+  productId String   @db.ObjectId
+  quantity  Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Order {
+  id          String      @id @default(auto()) @map("_id") @db.ObjectId
+  user        User        @relation(fields: [userId], references: [id])
+  userId      String      @db.ObjectId
+  orderItems  OrderItem[]
+  total       Float
+  status      OrderStatus @default(PENDING)
+  address     String      // Delivery address
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model OrderItem {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  order     Order    @relation(fields: [orderId], references: [id])
+  orderId   String   @db.ObjectId
+  product   Product  @relation(fields: [productId], references: [id])
+  productId String   @db.ObjectId
+  quantity  Int
+  price     Float    // Price at time of order
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum StoreCategory {
+  RESTAURANT
+  GROCERY
+  CLOTHING_APPAREL
+  CONVENIENCE
+  ELECTRONICS
+  HEALTH_BEAUTY
+  MISCELLANEOUS
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PREPARING
+  OUT_FOR_DELIVERY
+  DELIVERED
+  CANCELLED
+}
